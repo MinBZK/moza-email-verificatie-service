@@ -1,47 +1,41 @@
 package nl.rijksoverheid.moz.consumer;
 
-import io.smallrye.common.annotation.Blocking;
-import jakarta.transaction.Transactional;
-import nl.rijksoverheid.moz.entity.VerificationCode;
+import io.smallrye.faulttolerance.api.ExponentialBackoff;
+import nl.rijksoverheid.moz.service.VerificationService;
+import org.eclipse.microprofile.faulttolerance.Asynchronous;
+import org.eclipse.microprofile.faulttolerance.Fallback;
+import org.eclipse.microprofile.faulttolerance.Retry;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
-import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
-import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-
 
 @ApplicationScoped
 public class VerificationRequestHandler {
 
     private static final Logger LOG = Logger.getLogger(VerificationRequestHandler.class);
+    
+    @Inject
+    VerificationService verificationService;
 
     @Incoming("verification-requests-in")
-    @Blocking
-    @Transactional
-    public CompletionStage<Void> consume(Message<String> requestMessage){
-        String payload = requestMessage.getPayload();
+    @Asynchronous
+    @Retry(maxRetries = 5, delay = 2, delayUnit = ChronoUnit.SECONDS, maxDuration = 15, durationUnit = ChronoUnit.MINUTES)
+    @ExponentialBackoff(factor = 2, maxDelay = 300, maxDelayUnit = ChronoUnit.SECONDS)
+    @Fallback(fallbackMethod = "onMaxRetriesReached")
+    public CompletionStage<Void> consume(String payload) {
         LOG.info("Received verification request message with code ID: " + payload);
+        verificationService.process(payload);
+        return CompletableFuture.completedFuture(null);
+    }
 
-        try {
-            Long codeId = Long.parseLong(payload);
-            VerificationCode code = VerificationCode.findById(codeId);
-            if (code != null) {
-                // todo instead of logging, send an email to the user using NotifyNL for now
-                LOG.info("Verification code found for reference ID: " + code.getReferenceId());
-
-                code.setVerifyEmailSentAt(LocalDateTime.now());
-                code.persist();
-            } else {
-                LOG.warn("No verification code found for ID: " + codeId);
-            };
-
-        } catch (NumberFormatException e) {
-            LOG.error("Failed to parse verification request ID from message: " + payload, e);
-        }
-
-        return requestMessage.ack();
+    public CompletionStage<Void> onMaxRetriesReached(String payload) {
+        LOG.warn("reached max tries, gracefully deleting this message from the queue for code ID: " + payload);
+        return CompletableFuture.completedFuture(null);
     }
 }

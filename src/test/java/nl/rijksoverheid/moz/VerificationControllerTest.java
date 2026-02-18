@@ -1,24 +1,28 @@
 package nl.rijksoverheid.moz;
 
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
+import nl.rijksoverheid.moz.service.NotifyNLService;
 import nl.rijksoverheid.moz.dto.request.VerificationApplicationRequest;
 import nl.rijksoverheid.moz.dto.request.VerificationRequest;
 import nl.rijksoverheid.moz.entity.VerificationCode;
 import nl.rijksoverheid.moz.entity.VerificationStatistics;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
-import nl.rijksoverheid.moz.controller.VerificationController;
 import nl.rijksoverheid.moz.job.VerificationCleanupJob;
 import jakarta.transaction.Transactional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 import static io.restassured.RestAssured.given;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 
 @QuarkusTest
 class VerificationControllerTest {
@@ -28,6 +32,21 @@ class VerificationControllerTest {
 
     @Inject
     EntityManager entityManager;
+
+    @InjectMock
+    NotifyNLService notifyNLService;
+
+    @BeforeEach
+    void setup() {
+        Mockito.when(notifyNLService.sendVerificationEmail(any())).thenReturn(true);
+        clearStats();
+    }
+
+    @Transactional
+    void clearStats() {
+        VerificationStatistics.deleteAll();
+        VerificationCode.deleteAll();
+    }
 
     @Test
     @TestTransaction

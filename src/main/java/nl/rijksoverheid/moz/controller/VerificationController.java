@@ -54,7 +54,7 @@ public class VerificationController {
                     description = "Invalid request"
             )
     })
-    public String addServiceProvider(@Valid VerificationApplicationRequest request) {
+    public String requestVerification(@Valid VerificationApplicationRequest request) {
         LOG.info("Creating verification request for email: " + request.getEmail());
         VerificationCode code = new VerificationCode(request.getEmail());
         code.persist();
@@ -119,9 +119,7 @@ public class VerificationController {
             return Response.status(401).build();
         }
 
-        code.setVerifiedAt(LocalDateTime.now());
-        code.persist();
-
+        VerificationCode.update("verifiedAt = ?1 where id = ?2", LocalDateTime.now(), code.id);
         LOG.info("Verification successful for referenceId: " + request.getReferenceId());
         return Response.status(200).build();
     }
