@@ -64,7 +64,6 @@ public class VerificationController {
             )
     })
     public Response requestVerification(@Valid VerificationApplicationRequest request) {
-        LOG.infof("Creating verification request for email: %s", request.getEmail());
         VerificationCode code = new VerificationCode();
         code.persist();
         LOG.debugf("Verification code entity persisted with reference ID: %s", code.getReferenceId());
