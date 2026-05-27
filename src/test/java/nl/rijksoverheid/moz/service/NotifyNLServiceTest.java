@@ -54,8 +54,8 @@ public class NotifyNLServiceTest {
         // secret = fromApiKey.substring(keyLength - 36);
         // Total length >= 74
         
-        String serviceId = "f7cceea0-ecea-4102-9b93-23a0a3cc0a07";
-        String secret = "69f428c9-2567-4e98-932a-8abe83fb89d7";
+        String serviceId = "00000000-0000-0000-0000-000000000000";
+        String secret = "00000000-0000-0000-0000-000000000000";
         String apiKey = "prefix-" + serviceId + "-" + secret;
         // Adjust length to meet requirement >= 74
         while (apiKey.length() < 74) {
@@ -100,8 +100,8 @@ public class NotifyNLServiceTest {
         Method method = NotifyNLService.class.getDeclaredMethod("createToken", String.class, String.class);
         method.setAccessible(true);
 
-        String secret = "69f428c9-2567-4e98-932a-8abe83fb89d7";
-        String serviceId = "f7cceea0-ecea-4102-9b93-23a0a3cc0a07";
+        String secret = "00000000-0000-0000-0000-000000000000";
+        String serviceId = "00000000-0000-0000-0000-000000000000";
 
         String token = (String) method.invoke(null, secret, serviceId);
         Assertions.assertNotNull(token);
@@ -161,8 +161,8 @@ public class NotifyNLServiceTest {
         });
     }
 
-    private static final String VALID_SERVICE_ID = "f7cceea0-ecea-4102-9b93-23a0a3cc0a07";
-    private static final String VALID_SECRET     = "69f428c9-2567-4e98-932a-8abe83fb89d7";
+    private static final String VALID_SERVICE_ID = "00000000-0000-0000-0000-000000000000";
+    private static final String VALID_SECRET     = "00000000-0000-0000-0000-000000000000";
     private static final String VALID_API_KEY    = "prefix-" + VALID_SERVICE_ID + "-" + VALID_SECRET;
 
     @Test
